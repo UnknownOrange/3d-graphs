@@ -21,7 +21,7 @@ def getSurroundingAverage(img,xPos,yPos):
         for b in range(-1*avgSample,avgSample,1):
 
             if xPos+a>0 and xPos+a < width and yPos+b>0 and yPos+b < height:
-                if img[xPos+a,yPos+b][1] !=0:
+                if img[xPos+a,yPos+b][0] > 10:
                     data.append(img[xPos+a,yPos+b][0]+1)
 
 
@@ -48,9 +48,12 @@ def getSurroundingAverage(img,xPos,yPos):
             total2+= item
 
     if values == 0:
-        return 0
+        return 100
 
-    return total2/values
+    result = total2/values
+    if result<100:
+        return 100
+    return result
 
 def smooth(data,x,y, size):
 
@@ -58,18 +61,37 @@ def smooth(data,x,y, size):
 
     for a in range (-1*size,size,1):
         for b in range(-1*size,size,1):
-            if x+a>0 and x+a < width and y+b>0 and y+b < height:
+            if 0 < x+a < width and 0 < y+b < height:
                 tmp.append(data[x+a,y+b])
 
     total = 0
+    st_dev = 0
+
+
+    st_dev = np.std(tmp)
+
     for item in tmp:
         if item > 20:
             total = total + item
 
+
     if len(tmp) == 0:
         return 0
 
-    return total/len(tmp)
+    avg1 = total /len(tmp)
+    return avg1
+
+    total2 = 0.0
+    ct = 0
+    for item in tmp:
+
+        if  (avg1-item)<st_dev:
+            ct+=1
+            total2 = total2 + item
+
+    if ct == 0:
+        return data[x,y]
+    return total2/ct
 
 def readImageAndSmooth(name):
     img = imageio.imread(name)
@@ -101,7 +123,11 @@ def readImage(name):
         print(x)
         row = []
         for y in range(0, height):
-            row.append(img[x,y][0])
+
+            if img[x,y][0]<150:
+                row.append(150)
+            else:
+                row.append(img[x,y][0])
 
         data.append(row)
 
@@ -117,12 +143,11 @@ if __name__ == '__main__':
 
     print ("Item:"+str(incomeData[50,50]))
 
-    for a in range(0,10):
+    for a in range(0,15):
         print(a)
         for x in range(0, width):
-            print(x)
             for y in range(0, height):
-                walkscoreData[x,y]=smooth(walkscoreData,x,y,2)
+                walkscoreData[x,y]=smooth(walkscoreData,x,y,1)
 
     # Make data.
     X = np.arange(0, 1022, 1)
@@ -144,6 +169,7 @@ if __name__ == '__main__':
     # Add a color bar which maps values to colors.
     fig.colorbar(surf, shrink=0.5, aspect=5)
 
+    plt.gca().invert_xaxis()
     plt.show()
 
 # my-venv/bin/python3 readImages.py
